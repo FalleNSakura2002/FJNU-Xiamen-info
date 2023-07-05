@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<html>
+  <head>
+    <!-- 导入leaflet主要模块 -->
+    <link rel="stylesheet" type="text/css" href="../js/leaflet/leaflet.css" />
+    <!-- 导入样式 -->
+    <link href="../css/headers.css" rel="stylesheet" />
+    <script src="../js/leaflet/leaflet.js"></script>
+    <!-- 导入网络地图加载模块 -->
+    <script src="../js/leaflet/leaflet.ChineseTmsProviders.js"></script>
+    <!-- 导入Ajax插件 -->
+    <script src="../js/leaflet/leaflet.ajax.js"></script>
+    <!-- 导入热力图插件 -->
+    <script src="../js/leaflet/leaflet-heat.js"></script>
+    <!-- 导入BS5 -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet" />
+    <!-- 添加样式 -->
+    <style>
+      html,
+      body,
+      #map {
+        height: 100vh;
+        flex-grow: 0;
+        /* display: flex; */
+      }
+      body {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 0;
+        margin: 0;
+      }
+      .logo {
+        margin-right: 20px;
+      }
+      .all {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .head {
+        display: flex;
+        height: 10vh;
+      }
+    </style>
+    <!-- 标题与logo -->
+    <title>厦门市地理信息集成平台</title>
+    <link rel="shortcut icon" href="../img/1.png" type="image/x-icon" />
+  </head>
+  <body>
+    <!-- 导航栏 -->
+    <div class="container">
+      <header class="d-flex justify-content-center py-3">
+        <img class="logo" src="../img/1.png" width="42" />
+        <a
+          href="/"
+          class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none"
+        >
+          <span class="fs-4">厦门市地理信息集成平台</span>
+        </a>
+        <ul class="nav nav-pills">
+          <li class="nav-item">
+            <a href="Index.html" class="nav-link active" aria-current="page"
+              >二维信息</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="Three.html" class="nav-link">三维信息</a>
+          </li>
+        </ul>
+      </header>
+    </div>
+    <!-- 初始化地图容器 -->
+    <div id="map"></div>
+    <script type="text/javascript">
+      // 引用天地图矢量图层与注记图层，层级5-18
+      var NormalMap = L.tileLayer.chinaProvider("TianDiTu.Normal.Map", {
+        maxZoom: 18,
+        minZoom: 5,
+      });
+      var NormalAnnotion = L.tileLayer.chinaProvider(
+        "TianDiTu.Normal.Annotion",
+        {
+          maxZoom: 18,
+          minZoom: 5,
+        }
+      );
+      // 引用天地图卫星影像图层与注记图层，层级5-18
+      var NormalMap_sate = L.tileLayer.chinaProvider("TianDiTu.Satellite.Map", {
+        maxZoom: 18,
+        minZoom: 5,
+      });
+      var NormalAnnotion_sate = L.tileLayer.chinaProvider(
+        "TianDiTu.Satellite.Annotion",
+        {
+          maxZoom: 18,
+          minZoom: 5,
+        }
+      );
+      // 混合图层
+      var Background_Vector = L.layerGroup([NormalMap, NormalAnnotion]);
+      var Background_img = L.layerGroup([NormalMap_sate, NormalAnnotion_sate]);
+
+      // 加载LULC
+      var LULC = L.tileLayer.wms(
+        "http://47.115.200.155:8080/geoserver/FJNU_GIS/wms?",
+        {
+          layers: "image:Xiamen_LULC",
+          maxZoom: 15,
+          minzoom: 15,
+          format: "image/png",
+          transparent: true,
+        }
+      );
+
+      // 加载厦门行政边界
+      var Xiamen_boundary = new L.GeoJSON.AJAX(
+        "http://47.115.200.155:8080/geoserver/FJNU_GIS/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=FJNU_GIS%3AXiamen_boundary&maxFeatures=50&outputFormat=application%2Fjson",
+        {
+          // 绑定弹出事件，弹出区名称
+          onEachFeature: function (feature, layer) {
+            layer.bindPopup(feature.properties.COUN_NM);
+          },
+          // 绑定颜色方案
+          style: XM_bound_style,
+        }
+      );
+      // 制作降水测站热力图
+      var heatMap_rs = new L.heatLayer([], {
+        radius: 100,
+        blur: 20,
+        maxZoom: 17,
+      });
+      // 加载厦门降水站数据
+      var rainstation_layer = L.layerGroup([]);
+      var rain = fetch("../static/rainstation.json")
+        .then((data) => {
+          return data.json();
+        })
+        .then((rs) => {
+          for (let i = 0; i < rs.data.length; i++) {
+            var info = [rs.data[i].lat, rs.data[i].lng];
+            let marker = L.marker(info).bindPopup(rs.data[i].stnm);
+            heatMap_rs.addLatLng(info);
+            rainstation_layer.addLayer(marker);
+          }
+        });
+      // 底图图层
+      var baseLayers = {
+        矢量底图: Background_Vector,
+        影像底图: Background_img,
+      };
+      // 要素图层
+      var featureLayers = {
+        土地利用: LULC,
+        降水测站分布: rainstation_layer,
+        降水测站热力: heatMap_rs,
+      };
+      // 设置地图中心与缩放级别
+      var map = L.map("map", {
+        center: [24.6541, 118.1375],
+        zoom: 11,
+        layers: [Background_Vector],
+      });
+      map.addLayer(Xiamen_boundary);
+      // 加载图层控制器控件
+      L.control.layers(baseLayers, featureLayers).addTo(map);
+      // 比例尺
+      L.control.scale().addTo(map);
+
+      // 颜色方案
+      function XM_bound_style(feature) {
+        switch (feature.properties.COUN_NM) {
+          case "同安区":
+            return {
+              color: "#eda831",
+            };
+            break;
+          case "翔安区":
+            return {
+              color: "#a9e071",
+            };
+            break;
+          case "海沧区":
+            return {
+              color: "#3a2ee9",
+            };
+            break;
+          case "集美区":
+            return {
+              color: "#6fcc90",
+            };
+            break;
+          case "湖里区":
+            return {
+              color: "#73bdd0",
+            };
+            break;
+          case "思明区":
+            return {
+              color: "#ce7086",
+            };
+            break;
+        }
+      }
+    </script>
+  </body>
+</html>
