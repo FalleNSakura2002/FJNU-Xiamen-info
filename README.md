@@ -22,30 +22,30 @@
 
 - 矢量底图
 
-![alt](thumb\main.png)
+![alt](thumb/main.png)
 
 - 卫星底图
 
-![img_base.png](thumb\img_base.png)
+![img_base.png](thumb/img_base.png)
 
 ### 要素图层
 
 - 土地利用
 
-![LULC.png](thumb\LULC.png)
+![LULC.png](thumb/LULC.png)
 
 - 降水测站分布
 
-![RST.png](thumb\RST.png)
+![RST.png](thumb/RST.png)
 
 - 降水测站分布密度
 
-![RSH.png](thumb\RSH.png)
+![RSH.png](thumb/RSH.png)
 
 ### 三维图层
 
 - 人口分布密度
 
-![Pop.png](thumb\Pop.png)
+![Pop.png](thumb/Pop.png)
 
 
